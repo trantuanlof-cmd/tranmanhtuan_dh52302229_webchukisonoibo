@@ -115,12 +115,8 @@ export default function VerifyPage() {
             const idx = normText.indexOf(normMarker);
             if (idx !== -1) {
               const sub = normText.substring(0, idx);
-              // Cắt bỏ cả dòng kẻ "═══" nằm ngay phía trước nếu có
-              const borderIdx = sub.lastIndexOf("══");
-              if (borderIdx !== -1 && sub.length - borderIdx < 100) {
-                return sub.substring(0, borderIdx).trim();
-              }
-              return sub.trim();
+              // Loại bỏ triệt để mọi dòng kẻ trang trí, khoảng trắng, xuống dòng ở cuối
+              return sub.replace(/[\s═\-=_\u2550\u2500]+$/, "");
             }
           }
           return normText.trim();
