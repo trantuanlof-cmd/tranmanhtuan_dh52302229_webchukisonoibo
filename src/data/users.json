@@ -1,0 +1,18 @@
+[
+  {
+    "id": "NV001",
+    "username": "admin",
+    "password": "123",
+    "fullName": "Quản Trị Viên",
+    "department": "Phòng IT",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzw8Fw7u/Kz4Y6ZkQ\n... (Đây là khóa ví dụ, thực tế sinh ra ngẫu nhiên)\n-----END PUBLIC KEY-----"
+  },
+  {
+    "id": "NV002",
+    "username": "nguyenvana",
+    "password": "123",
+    "fullName": "Nguyễn Văn A",
+    "department": "Phòng Hành Chính",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...\n-----END PUBLIC KEY-----"
+  }
+]
