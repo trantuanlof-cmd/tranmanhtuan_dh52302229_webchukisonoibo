@@ -43,7 +43,10 @@ export default function VerifyPage() {
       addStep("🔍 Đang tìm dữ liệu chữ ký trong file...");
       const metaFile = zip.file("word/signature-meta.xml");
       if (!metaFile) {
-        setResult({ status: "error", message: "File này chưa được ký số bởi hệ thống. Không tìm thấy metadata chữ ký." });
+        setResult({
+          status: "error",
+          message: "Không tìm thấy dữ liệu xác thực trong file. Nguyên nhân có thể do: (1) File này chưa được ký số, hoặc (2) File được ký bằng phiên bản cũ chưa hỗ trợ xác thực. → Vui lòng vào Dashboard, ký lại file bằng phiên bản mới nhất, sau đó thử xác thực lại.",
+        });
         return;
       }
 
