@@ -67,7 +67,7 @@ export default function DashboardPage() {
     setTimeout(() => setPrivateKeyCopied(false), 2000);
   };
 
-  // Ký số file
+  // Ký số file - hoạt động với BẤT KỲ file .docx nào (không cần tag {signature})
   const handleSign = async () => {
     if (!file) {
       setStatus("⚠️ Vui lòng chọn một file Word (.docx)!");
@@ -82,7 +82,6 @@ export default function DashboardPage() {
       setStatus("📖 Đang đọc nội dung file...");
       const mammoth = (await import("mammoth")).default;
       const PizZip = (await import("pizzip")).default;
-      const Docxtemplater = (await import("docxtemplater")).default;
 
       const arrayBuffer = await file.arrayBuffer();
 
@@ -92,16 +91,49 @@ export default function DashboardPage() {
 
       setStatus("✍️ Đang ký số bằng Private Key...");
       const signature = await signData(textContent, privateKey);
+      const signTime = new Date().toLocaleString("vi-VN");
 
-      setStatus("📎 Đang nhúng chữ ký vào file Word...");
+      setStatus("📎 Đang chèn chữ ký số vào cuối file...");
+
+      // Chèn chữ ký trực tiếp vào XML của Word - hoạt động với mọi file .docx
       const zip = new PizZip(arrayBuffer);
-      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      const docXmlFile = zip.file("word/document.xml");
+      if (!docXmlFile) throw new Error("File .docx không hợp lệ");
 
-      doc.render({
-        signature: `\n\n═══════════════════════════════════\nCHỮ KÝ SỐ XÁC THỰC\n═══════════════════════════════════\nNgười ký: ${currentUser}\nThời gian: ${new Date().toLocaleString("vi-VN")}\nMã chữ ký: ${signature}\n═══════════════════════════════════`,
-      });
+      let documentXml = docXmlFile.asText();
 
-      const out = doc.getZip().generate({
+      // Tạo đoạn chữ ký dạng XML Word chuẩn
+      const signatureXml = `
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:pPr><w:jc w:val="center"/></w:pPr>
+</w:p>
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:r><w:rPr><w:b/><w:color w:val="2E74B5"/></w:rPr>
+    <w:t>&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550; CH&#x1EEE; K&#xDD; S&#x1ED0; X&#xC1;C TH&#x1EF0;C &#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;</w:t></w:r>
+</w:p>
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">Ng&#x01B0;&#x1EDD;i k&#xFD;: </w:t></w:r>
+  <w:r><w:t>${currentUser}</w:t></w:r>
+</w:p>
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">Th&#x1EDD;i gian: </w:t></w:r>
+  <w:r><w:t>${signTime}</w:t></w:r>
+</w:p>
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">M&#xE3; ch&#x1EEF; k&#xFD;: </w:t></w:r>
+  <w:r><w:rPr><w:sz w:val="16"/><w:color w:val="666666"/></w:rPr>
+    <w:t>${signature.substring(0, 64)}...</w:t></w:r>
+</w:p>
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:r><w:rPr><w:color w:val="2E74B5"/></w:rPr>
+    <w:t>&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;</w:t></w:r>
+</w:p>`;
+
+      // Chèn trước thẻ đóng </w:body>
+      documentXml = documentXml.replace("</w:body>", signatureXml + "</w:body>");
+      zip.file("word/document.xml", documentXml);
+
+      const out = zip.generate({
         type: "blob",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
@@ -113,7 +145,7 @@ export default function DashboardPage() {
       setStatus("✅ Ký số thành công!");
     } catch (error) {
       console.error(error);
-      setStatus("❌ Lỗi: Đảm bảo file là .docx hợp lệ và có thẻ {signature} ở nơi muốn hiển thị chữ ký.");
+      setStatus("❌ Lỗi: File không phải định dạng .docx hợp lệ.");
     }
   };
 
@@ -180,11 +212,10 @@ export default function DashboardPage() {
       {/* Template Selection */}
       <div className="bg-white shadow-lg rounded-xl p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          📁 Tải Biểu Mẫu Công Ty
+          📁 Biểu Mẫu Công Ty <span className="text-xs font-normal text-gray-400">(Tùy chọn)</span>
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          Chọn một biểu mẫu để tải về, điền nội dung, sau đó upload lên để ký số.
-          Mỗi biểu mẫu đã có thẻ <code className="bg-gray-100 px-1 rounded">&#123;signature&#125;</code> sẵn ở cuối.
+          Tải biểu mẫu sẵn để điền nội dung nhanh hơn. Bạn cũng có thể dùng file Word của riêng mình.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {TEMPLATES.map((tmpl) => (
@@ -213,7 +244,9 @@ export default function DashboardPage() {
 
         <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:border-blue-400 transition-colors">
           <div className="text-4xl mb-2">📤</div>
-          <p className="text-gray-500 text-sm mb-3">Chọn file Word (.docx) đã điền nội dung để ký số</p>
+          <p className="text-gray-500 text-sm mb-3">
+            Upload <strong>bất kỳ file Word (.docx)</strong> nào — chữ ký số sẽ tự động được chèn vào cuối tài liệu
+          </p>
           <input
             type="file"
             accept=".docx"
