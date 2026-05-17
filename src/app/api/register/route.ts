@@ -7,7 +7,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { username, password, fullName, department } = await request.json();
+    const { username, password, fullName, department, publicKey } = await request.json();
 
     const allUsers = getAllUsers();
 
@@ -19,8 +19,6 @@ export async function POST(request: Request) {
     }
 
     const newId = `NV${String(allUsers.length + 1).padStart(3, "0")}`;
-    const randomKey = Buffer.from(`RSA_PUBLIC_KEY_${username}_${Date.now()}`).toString("base64");
-    const publicKey = `-----BEGIN PUBLIC KEY-----\n${randomKey}\n-----END PUBLIC KEY-----`;
 
     const newUser = {
       id: newId,
@@ -28,7 +26,7 @@ export async function POST(request: Request) {
       password,
       fullName,
       department: department || "Chưa phân công",
-      publicKey,
+      publicKey: publicKey || "", // Public Key thực (SPKI base64) từ client gửi lên
     };
 
     inMemoryUsers.push(newUser);
@@ -39,9 +37,6 @@ export async function POST(request: Request) {
       user: { id: newId, username, fullName },
     });
   } catch {
-    return NextResponse.json(
-      { success: false, message: "Lỗi Server" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Lỗi Server" }, { status: 500 });
   }
 }

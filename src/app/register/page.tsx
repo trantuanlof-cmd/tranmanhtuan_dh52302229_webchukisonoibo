@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { generateKeyPair } from "@/utils/crypto";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -14,6 +15,7 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -35,6 +37,14 @@ export default function RegisterPage() {
     }
 
     try {
+      setLoading(true);
+
+      // Bước 1: Sinh cặp khóa RSA-PSS 2048-bit thực sự
+      setSuccess("🔐 Đang tạo cặp khóa RSA-2048...");
+      const { publicKeyBase64, privateKeyBase64 } = await generateKeyPair();
+
+      // Bước 2: Gửi thông tin đăng ký + Public Key lên server
+      setSuccess("📡 Đang gửi thông tin đăng ký...");
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,19 +53,28 @@ export default function RegisterPage() {
           password: form.password,
           fullName: form.fullName,
           department: form.department,
+          publicKey: publicKeyBase64,
         }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setSuccess("Đăng ký thành công! Đang chuyển hướng...");
-        setTimeout(() => router.push("/login"), 1500);
+        // Bước 3: Lưu Private Key vào localStorage của trình duyệt
+        localStorage.setItem("privateKey", privateKeyBase64);
+        localStorage.setItem("currentUser", form.username);
+        setSuccess("✅ Đăng ký thành công! Cặp khóa RSA đã được lưu vào thiết bị. Đang chuyển hướng...");
+        setTimeout(() => router.push("/login"), 2000);
       } else {
         setError(data.message || "Đăng ký thất bại!");
+        setSuccess("");
       }
-    } catch {
-      setError("Có lỗi xảy ra, vui lòng thử lại!");
+    } catch (err) {
+      console.error(err);
+      setError("Có lỗi xảy ra khi tạo khóa hoặc kết nối server!");
+      setSuccess("");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -162,9 +181,17 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors mt-2"
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2"
         >
-          Đăng Ký
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Đang tạo cặp khóa RSA...
+            </>
+          ) : (
+            "Đăng Ký & Tạo Khóa"
+          )}
         </button>
       </form>
 
