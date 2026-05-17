@@ -282,7 +282,6 @@ export default function VerifyPage() {
           <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
             <div className="flex gap-2"><span className="font-semibold text-gray-600 w-28">Người ký:</span><span>{result.meta.signer}</span></div>
             <div className="flex gap-2"><span className="font-semibold text-gray-600 w-28">Thời gian:</span><span>{result.meta.timestamp}</span></div>
-            <div className="flex gap-2"><span className="font-semibold text-gray-600 w-28">Thuật toán:</span><span>{result.meta.algorithm}</span></div>
           </div>
         </div>
       )}
