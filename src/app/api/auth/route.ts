@@ -9,7 +9,8 @@ export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    const user = getAllUsers().find(
+    const allUsers = await getAllUsers();
+    const user = allUsers.find(
       (u) => u.username === username && u.password === password
     );
 

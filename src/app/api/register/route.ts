@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { getAllUsers, inMemoryUsers } from "@/utils/userStore";
+import { getAllUsers, saveUser } from "@/utils/userStore";
 
 export async function GET() {
-  return NextResponse.json(getAllUsers());
+  const users = await getAllUsers();
+  return NextResponse.json(users);
 }
 
 export async function POST(request: Request) {
   try {
     const { username, password, fullName, department, publicKey } = await request.json();
 
-    const allUsers = getAllUsers();
+    const allUsers = await getAllUsers();
 
     if (allUsers.find((u) => u.username === username)) {
       return NextResponse.json(
@@ -29,7 +30,13 @@ export async function POST(request: Request) {
       publicKey: publicKey || "", // Public Key thực (SPKI base64) từ client gửi lên
     };
 
-    inMemoryUsers.push(newUser);
+    const saved = await saveUser(newUser);
+    if (!saved) {
+      return NextResponse.json(
+        { success: false, message: "Tên đăng nhập đã tồn tại!" },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

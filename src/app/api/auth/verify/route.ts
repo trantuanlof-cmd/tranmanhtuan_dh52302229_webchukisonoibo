@@ -28,7 +28,8 @@ export async function POST(request: Request) {
     }
 
     // 3. Lấy Public Key từ DB
-    const user = getAllUsers().find((u) => u.username === username);
+    const allUsers = await getAllUsers();
+    const user = allUsers.find((u) => u.username === username);
     if (!user || !user.publicKey) {
       return NextResponse.json(
         { success: false, message: "Không tìm thấy thông tin người dùng hoặc Public Key." },
