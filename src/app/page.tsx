@@ -40,6 +40,12 @@ export default function Home() {
         </h1>
         <div className="flex gap-3">
           <Link
+            href="/verify"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg font-medium transition-colors text-sm"
+          >
+            Xác Thực
+          </Link>
+          <Link
             href="/register"
             className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium transition-colors text-sm"
           >

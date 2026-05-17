@@ -133,6 +133,16 @@ export default function DashboardPage() {
       documentXml = documentXml.replace("</w:body>", signatureXml + "</w:body>");
       zip.file("word/document.xml", documentXml);
 
+      // Lưu chữ ký đầy đủ vào custom XML metadata (dùng cho việc xác thực sau này)
+      const metaXml = `<?xml version="1.0" encoding="UTF-8"?>
+<SignatureMetadata>
+  <Signer>${currentUser}</Signer>
+  <Timestamp>${signTime}</Timestamp>
+  <Algorithm>RSA-PSS-SHA256</Algorithm>
+  <Signature>${signature}</Signature>
+</SignatureMetadata>`;
+      zip.file("word/signature-meta.xml", metaXml);
+
       const out = zip.generate({
         type: "blob",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
