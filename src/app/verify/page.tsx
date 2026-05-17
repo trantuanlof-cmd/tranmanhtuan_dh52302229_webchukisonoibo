@@ -99,26 +99,47 @@ export default function VerifyPage() {
         const textResult = await mammoth.extractRawText({ arrayBuffer });
         const currentText = textResult.value;
 
-        // Hàm loại bỏ khối chữ ký số khỏi text
+        // Hàm loại bỏ khối chữ ký số khỏi text (chuẩn hóa NFC tiếng Việt để tránh lệch code point)
         const cleanSignatureBlockText = (text: string) => {
-          const marker = "CHỮ KÝ SỐ XÁC THỰC";
-          const idx = text.indexOf(marker);
-          if (idx !== -1) {
-            const sub = text.substring(0, idx);
-            const borderIdx = sub.lastIndexOf("══");
-            if (borderIdx !== -1 && sub.length - borderIdx < 50) {
-              return sub.substring(0, borderIdx).trim();
+          const normText = text.normalize("NFC");
+          const markers = [
+            "CHỮ KÝ SỐ XÁC THỰC",
+            "Người ký:",
+            "Thời gian:",
+            "Mã chữ ký:",
+            "══════"
+          ];
+
+          for (const marker of markers) {
+            const normMarker = marker.normalize("NFC");
+            const idx = normText.indexOf(normMarker);
+            if (idx !== -1) {
+              const sub = normText.substring(0, idx);
+              // Cắt bỏ cả dòng kẻ "═══" nằm ngay phía trước nếu có
+              const borderIdx = sub.lastIndexOf("══");
+              if (borderIdx !== -1 && sub.length - borderIdx < 100) {
+                return sub.substring(0, borderIdx).trim();
+              }
+              return sub.trim();
             }
-            return sub.trim();
           }
-          return text.trim();
+          return normText.trim();
         };
 
-        const cleanedCurrent = cleanSignatureBlockText(currentText);
-        const normalizedCurrent = cleanedCurrent.replace(/\r\n/g, "\n").trim();
-        const normalizedOriginal = originalText.replace(/\r\n/g, "\n").trim();
+        const normalizedCurrent = cleanSignatureBlockText(currentText).normalize("NFC").replace(/\r\n/g, "\n").trim();
+        const normalizedOriginal = originalText.normalize("NFC").replace(/\r\n/g, "\n").trim();
+
+        addStep(`🔍 Độ dài nội dung gốc: ${normalizedOriginal.length} ký tự`);
+        addStep(`🔍 Độ dài nội dung hiện tại (sau lọc): ${normalizedCurrent.length} ký tự`);
 
         isTextUnaltered = normalizedCurrent === normalizedOriginal;
+        
+        if (!isTextUnaltered) {
+          // In log so sánh 20 ký tự đầu/cuối của 2 chuỗi để debug trực tiếp
+          console.log("Current cleaned:", JSON.stringify(normalizedCurrent));
+          console.log("Original:", JSON.stringify(normalizedOriginal));
+        }
+
         addStep(isTextUnaltered 
           ? "✅ Nội dung tài liệu hiện tại trùng khớp 100% với bản gốc lúc ký!"
           : "⚠️ Phát hiện nội dung tài liệu đã bị sửa đổi so với lúc ký!"
