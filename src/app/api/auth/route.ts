@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import users from "@/data/users.json";
+import { getAllUsers } from "@/utils/userStore";
 
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    const user = users.find(
+    const user = getAllUsers().find(
       (u) => u.username === username && u.password === password
     );
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       { success: false, message: "Sai tài khoản hoặc mật khẩu!" },
       { status: 401 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: "Lỗi Server" },
       { status: 500 }

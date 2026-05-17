@@ -22,10 +22,8 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        // Trong môi trường demo, ta tạo ngẫu nhiên một PrivateKey lưu vào localStorage nếu chưa có
         if (!localStorage.getItem("privateKey")) {
-          // Fake private key for demonstration. In real app, user generates this or loads from file.
-          localStorage.setItem("privateKey", "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC... (Fake Private Key)\n-----END PRIVATE KEY-----");
+          localStorage.setItem("privateKey", `PRIVATE_KEY_${username}_${Date.now()}`);
         }
         localStorage.setItem("currentUser", username);
         router.push("/dashboard");
@@ -87,8 +85,14 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <Link href="/" className="text-gray-500 hover:text-gray-800 text-sm">
+      <div className="mt-6 text-center space-y-3">
+        <p className="text-gray-500 text-sm">
+          Chưa có tài khoản?{" "}
+          <Link href="/register" className="text-green-600 hover:underline font-medium">
+            Đăng ký ngay
+          </Link>
+        </p>
+        <Link href="/" className="text-gray-400 hover:text-gray-700 text-sm block">
           &larr; Quay lại trang chủ
         </Link>
       </div>
