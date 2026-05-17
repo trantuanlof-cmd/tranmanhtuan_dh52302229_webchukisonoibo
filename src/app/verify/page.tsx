@@ -52,7 +52,7 @@ export default function VerifyPage() {
 
       const metaXml = metaFile.asText();
       const getTag = (tag: string) => {
-        const match = metaXml.match(new RegExp(`<${tag}>([\s\S]*?)<\/${tag}>`));
+        const match = metaXml.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
         return match ? match[1].trim() : "";
       };
 
