@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const [status, setStatus] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState("");
+  const [sigFileUrl, setSigFileUrl] = useState<string | null>(null);
+  const [sigFileName, setSigFileName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [privateKeyCopied, setPrivateKeyCopied] = useState(false);
   const [showKey, setShowKey] = useState(false);
@@ -143,6 +145,32 @@ export default function DashboardPage() {
 </SignatureMetadata>`;
       zip.file("word/signature-meta.xml", metaXml);
 
+      // Tạo file .sig riêng (chứa hash + chữ ký đầy đủ)
+      const sigContent = [
+        "=== FILE CHỮ KÝ SỐ (Digital Signature File) ===",
+        "",
+        `Tên file gốc : ${file.name}`,
+        `Người ký     : ${currentUser}`,
+        `Thời gian    : ${signTime}`,
+        `Thuật toán   : RSA-PSS-SHA256`,
+        "",
+        "--- SHA-256 HASH CỦA NỘI DUNG GỐC ---",
+        contentHash,
+        "",
+        "--- CHỮ KÝ SỐ (Base64) ---",
+        signature,
+        "",
+        "=== HƯỚNG DẪN XÁC THỰC ===",
+        "Upload file Word đã ký (.docx) tại trang /verify để xác thực tự động.",
+        "Hoặc dùng file .sig này để xác thực thủ công bằng Public Key của người ký.",
+      ].join("\n");
+
+      const sigBlob = new Blob([sigContent], { type: "text/plain" });
+      const sigUrl = URL.createObjectURL(sigBlob);
+      const newSigName = file.name.replace(".docx", ".sig");
+      setSigFileUrl(sigUrl);
+      setSigFileName(newSigName);
+
       const out = zip.generate({
         type: "blob",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -263,6 +291,7 @@ export default function DashboardPage() {
             onChange={(e) => {
               setFile(e.target.files?.[0] || null);
               setDownloadUrl(null);
+              setSigFileUrl(null);
               setStatus("");
             }}
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
@@ -291,13 +320,27 @@ export default function DashboardPage() {
         </button>
 
         {downloadUrl && (
-          <a
-            href={downloadUrl}
-            download={downloadFileName}
-            className="block w-full text-center mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors"
-          >
-            💾 Lưu File Đã Ký Về Máy
-          </a>
+          <div className="mt-3 space-y-2">
+            <a
+              href={downloadUrl}
+              download={downloadFileName}
+              className="flex items-center justify-center gap-2 w-full text-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors"
+            >
+              💾 Tải File Word Đã Ký (.docx)
+            </a>
+            {sigFileUrl && (
+              <a
+                href={sigFileUrl}
+                download={sigFileName}
+                className="flex items-center justify-center gap-2 w-full text-center bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-colors"
+              >
+                🔏 Tải File Chữ Ký Số (.sig)
+              </a>
+            )}
+            <p className="text-xs text-gray-400 text-center">
+              File <code>.sig</code> chứa SHA-256 hash và chữ ký RSA đầy đủ — dùng để xác thực thủ công hoặc lưu trữ hồ sơ
+            </p>
+          </div>
         )}
       </div>
     </div>
