@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signData } from "@/utils/crypto";
+import { signData, generateSHA256Hash } from "@/utils/crypto";
 
 const TEMPLATES = [
   { id: "bien-ban-hop", label: "Biên Bản Họp", icon: "📋", desc: "Biên bản ghi nhớ cuộc họp nội bộ" },
@@ -90,6 +90,7 @@ export default function DashboardPage() {
       setStatus("🔐 Đang băm nội dung (SHA-256)...");
       const result = await mammoth.extractRawText({ arrayBuffer });
       const textContent = result.value;
+      const contentHash = await generateSHA256Hash(textContent);
 
       setStatus("✍️ Đang ký số bằng Private Key...");
       const signature = await signData(textContent, privateKey);
