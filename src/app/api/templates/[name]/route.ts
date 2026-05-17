@@ -6,12 +6,9 @@ import {
   TextRun,
   HeadingLevel,
   AlignmentType,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
 } from "docx";
+
+export const runtime = "nodejs";
 
 const templates: Record<string, () => Document> = {
   "bien-ban-hop": () =>

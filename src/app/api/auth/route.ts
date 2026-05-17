@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAllUsers } from "@/utils/userStore";
+import { pendingChallenges } from "@/utils/authStore";
 import { webcrypto } from "node:crypto";
 
-// Lưu tạm challenges (in-memory, phù hợp cho demo)
-const pendingChallenges = new Map<string, { challenge: string; expiresAt: number }>();
+export const runtime = "nodejs";
 
-// POST /api/auth - Kiểm tra username/password, trả về challenge
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
@@ -21,11 +20,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Kiểm tra user có Public Key chưa (để quyết định có cần xác thực chữ ký không)
+    // Kiểm tra user có Public Key chưa
     if (user.publicKey && user.publicKey.length > 20) {
-      // Sinh challenge ngẫu nhiên
       const challenge = webcrypto.randomUUID();
-      // Lưu tạm với timeout 3 phút
       pendingChallenges.set(username, {
         challenge,
         expiresAt: Date.now() + 3 * 60 * 1000,
@@ -59,6 +56,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: "Lỗi Server" }, { status: 500 });
   }
 }
-
-// Export pendingChallenges để dùng ở verify route
-export { pendingChallenges };

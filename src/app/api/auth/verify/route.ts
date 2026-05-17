@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAllUsers } from "@/utils/userStore";
+import { pendingChallenges } from "@/utils/authStore";
 import { webcrypto } from "node:crypto";
-import { pendingChallenges } from "../route";
 
-// POST /api/auth/verify - Xác thực chữ ký số của challenge
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const { username, signedChallenge } = await request.json();
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Kiểm tra challenge có hết hạn không
+    // 2. Kiểm tra hết hạn
     if (Date.now() > pending.expiresAt) {
       pendingChallenges.delete(username);
       return NextResponse.json(
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Lấy Public Key của user từ DB
+    // 3. Lấy Public Key từ DB
     const user = getAllUsers().find((u) => u.username === username);
     if (!user || !user.publicKey) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Import Public Key (SPKI base64) vào Node.js crypto
+    // 4. Import Public Key (SPKI base64) vào webcrypto
     const publicKeyBytes = Buffer.from(user.publicKey, "base64");
     const publicKey = await webcrypto.subtle.importKey(
       "spki",
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
       challengeBytes
     );
 
-    // 6. Xóa challenge sau khi dùng (chống replay attack)
+    // 6. Xóa challenge (chống replay attack)
     pendingChallenges.delete(username);
 
     if (isValid) {
@@ -78,6 +79,9 @@ export async function POST(request: Request) {
     }
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ success: false, message: "Lỗi xác thực: " + (e as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Lỗi xác thực: " + (e as Error).message },
+      { status: 500 }
+    );
   }
 }
