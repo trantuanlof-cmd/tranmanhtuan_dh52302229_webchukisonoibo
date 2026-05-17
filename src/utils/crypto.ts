@@ -16,8 +16,16 @@ export async function generateKeyPair(): Promise<{ publicKeyBase64: string; priv
   const publicKeySpki = await crypto.subtle.exportKey("spki", keyPair.publicKey);
   const privateKeyPkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
 
-  const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKeySpki)));
-  const privateKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(privateKeyPkcs8)));
+  const publicKeyBase64 = btoa(
+    Array.from(new Uint8Array(publicKeySpki))
+      .map((b) => String.fromCharCode(b))
+      .join("")
+  );
+  const privateKeyBase64 = btoa(
+    Array.from(new Uint8Array(privateKeyPkcs8))
+      .map((b) => String.fromCharCode(b))
+      .join("")
+  );
 
   return { publicKeyBase64, privateKeyBase64 };
 }
@@ -41,7 +49,11 @@ export async function signChallenge(challenge: string, privateKeyBase64: string)
     challengeBytes
   );
 
-  return btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+  return btoa(
+    Array.from(new Uint8Array(signatureBytes))
+      .map((b) => String.fromCharCode(b))
+      .join("")
+  );
 }
 
 // ====== Hash SHA-256 ======
