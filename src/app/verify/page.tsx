@@ -135,7 +135,11 @@ export default function VerifyPage() {
         isTextUnaltered = normalizedCurrent === normalizedOriginal;
         
         if (!isTextUnaltered) {
-          // In log so sánh 20 ký tự đầu/cuối của 2 chuỗi để debug trực tiếp
+          const diffEndOriginal = normalizedOriginal.substring(Math.max(0, normalizedOriginal.length - 60));
+          const diffEndCurrent = normalizedCurrent.substring(Math.max(0, normalizedCurrent.length - 60));
+          addStep(`📝 [Gốc - 60 ký tự cuối]: "${diffEndOriginal}"`);
+          addStep(`📝 [Hiện tại - 60 ký tự cuối]: "${diffEndCurrent}"`);
+          
           console.log("Current cleaned:", JSON.stringify(normalizedCurrent));
           console.log("Original:", JSON.stringify(normalizedOriginal));
         }
