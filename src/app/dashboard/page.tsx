@@ -10,7 +10,6 @@ const TEMPLATES = [
   { id: "cong-van", label: "Công Văn", icon: "📄", desc: "Công văn chính thức gửi nội/ngoại bộ" },
   { id: "hop-dong", label: "Hợp Đồng Công Việc", icon: "📝", desc: "Hợp đồng phân công công việc nội bộ" },
   { id: "phieu-de-xuat", label: "Phiếu Đề Xuất", icon: "💡", desc: "Phiếu đề xuất ý kiến / yêu cầu" },
-  { id: "bao-cao-cong-nghe", label: "Báo Cáo Công Nghệ (Word)", icon: "🎓", desc: "Báo cáo đầy đủ về Công nghệ & Thuật toán của dự án" },
 ];
 
 export default function DashboardPage() {
