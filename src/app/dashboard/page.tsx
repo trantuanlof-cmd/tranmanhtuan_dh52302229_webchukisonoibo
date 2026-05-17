@@ -137,12 +137,14 @@ export default function DashboardPage() {
       zip.file("word/document.xml", documentXml);
 
       // Lưu chữ ký đầy đủ vào custom XML metadata (dùng cho việc xác thực sau này)
+      const originalTextBase64 = btoa(unescape(encodeURIComponent(textContent)));
       const metaXml = `<?xml version="1.0" encoding="UTF-8"?>
 <SignatureMetadata>
   <Signer>${currentUser}</Signer>
   <Timestamp>${signTime}</Timestamp>
   <Algorithm>RSA-PSS-SHA256</Algorithm>
   <Signature>${signature}</Signature>
+  <OriginalText>${originalTextBase64}</OriginalText>
 </SignatureMetadata>`;
       zip.file("word/signature-meta.xml", metaXml);
 

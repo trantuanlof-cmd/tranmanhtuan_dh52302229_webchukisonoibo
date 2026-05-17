@@ -87,26 +87,61 @@ export default function VerifyPage() {
       }
       addStep(`✅ Đã tìm thấy Public Key của "${meta.signer}"`);
 
-      // Bước 3: Đọc nội dung gốc (bỏ phần signature đã chèn)
-      addStep("📄 Đang đọc nội dung gốc của tài liệu...");
-      let documentXml = zip.file("word/document.xml")!.asText();
+      // Bước 3: Đọc và tách nội dung gốc
+      let originalText = "";
+      let isTextUnaltered = false;
+      const originalTextBase64 = getTag("OriginalText");
 
-      // Xóa phần chữ ký đã chèn trước </w:body> để lấy nội dung gốc
-      const sigBlockRegex = /\n?<w:p xmlns:w="http:\/\/schemas\.openxmlformats\.org\/wordprocessingml\/2006\/main">\s*<w:pPr><w:jc w:val="center"\/><\/w:pPr>\s*<\/w:p>[\s\S]*?<\/w:body>/;
-      const originalXml = documentXml.replace(sigBlockRegex, "</w:body>");
+      if (originalTextBase64) {
+        addStep("📄 Phát hiện metadata chữ ký thế hệ mới. Đang đối chiếu...");
+        originalText = decodeURIComponent(escape(atob(originalTextBase64)));
 
-      // Tạo zip tạm với nội dung gốc để đọc text
-      const tempZip = new PizZip(arrayBuffer);
-      tempZip.file("word/document.xml", originalXml);
-      const tempBuffer = tempZip.generate({ type: "arraybuffer" });
-      const textResult = await mammoth.extractRawText({ arrayBuffer: tempBuffer });
-      const originalText = textResult.value;
+        const textResult = await mammoth.extractRawText({ arrayBuffer });
+        const currentText = textResult.value;
 
-      addStep(`✅ Đã tách nội dung gốc (${originalText.length} ký tự)`);
+        // Hàm loại bỏ khối chữ ký số khỏi text
+        const cleanSignatureBlockText = (text: string) => {
+          const marker = "CHỮ KÝ SỐ XÁC THỰC";
+          const idx = text.indexOf(marker);
+          if (idx !== -1) {
+            const sub = text.substring(0, idx);
+            const borderIdx = sub.lastIndexOf("══");
+            if (borderIdx !== -1 && sub.length - borderIdx < 50) {
+              return sub.substring(0, borderIdx).trim();
+            }
+            return sub.trim();
+          }
+          return text.trim();
+        };
+
+        const cleanedCurrent = cleanSignatureBlockText(currentText);
+        const normalizedCurrent = cleanedCurrent.replace(/\r\n/g, "\n").trim();
+        const normalizedOriginal = originalText.replace(/\r\n/g, "\n").trim();
+
+        isTextUnaltered = normalizedCurrent === normalizedOriginal;
+        addStep(isTextUnaltered 
+          ? "✅ Nội dung tài liệu hiện tại trùng khớp 100% với bản gốc lúc ký!"
+          : "⚠️ Phát hiện nội dung tài liệu đã bị sửa đổi so với lúc ký!"
+        );
+      } else {
+        // Tương thích ngược phiên bản cũ (XML carving)
+        addStep("📄 Đang phân tích nội dung XML (phương pháp tương thích ngược)...");
+        let documentXml = zip.file("word/document.xml")!.asText();
+        const sigBlockRegex = /\n?<w:p xmlns:w="http:\/\/schemas\.openxmlformats\.org\/wordprocessingml\/2006\/main">\s*<w:pPr><w:jc w:val="center"\/><\/w:pPr>\s*<\/w:p>[\s\S]*?<\/w:body>/;
+        const originalXml = documentXml.replace(sigBlockRegex, "</w:body>");
+
+        const tempZip = new PizZip(arrayBuffer);
+        tempZip.file("word/document.xml", originalXml);
+        const tempBuffer = tempZip.generate({ type: "arraybuffer" });
+        const textResult = await mammoth.extractRawText({ arrayBuffer: tempBuffer });
+        originalText = textResult.value;
+        isTextUnaltered = true; // Phiên bản cũ giả định nguyên vẹn khi tách XML
+        addStep(`✅ Đã trích xuất nội dung gốc cũ (${originalText.length} ký tự)`);
+      }
 
       // Bước 4: Tính hash SHA-256 của nội dung gốc
-      addStep("🔐 Đang tính băm SHA-256 của nội dung...");
-      const { generateSHA256Hash, signChallenge } = await import("@/utils/crypto");
+      addStep("🔐 Đang tính băm SHA-256 của nội dung gốc...");
+      const { generateSHA256Hash } = await import("@/utils/crypto");
       const contentHash = await generateSHA256Hash(originalText);
       addStep(`✅ Hash: ${contentHash.substring(0, 32)}...`);
 
@@ -137,11 +172,14 @@ export default function VerifyPage() {
         challengeBytes
       );
 
-      if (isValid) {
+      if (isValid && isTextUnaltered) {
         addStep("✅ Chữ ký số HỢP LỆ!");
         setResult({ status: "success", meta, publicKeyFound: true });
+      } else if (isValid && !isTextUnaltered) {
+        addStep("❌ Nội dung tài liệu đã bị sửa đổi trái phép sau khi ký!");
+        setResult({ status: "fail", meta, publicKeyFound: true });
       } else {
-        addStep("❌ Chữ ký số KHÔNG HỢP LỆ — nội dung có thể đã bị chỉnh sửa!");
+        addStep("❌ Chữ ký số KHÔNG HỢP LỆ (chữ ký giả mạo hoặc sai khóa)!");
         setResult({ status: "fail", meta, publicKeyFound: true });
       }
     } catch (e) {
