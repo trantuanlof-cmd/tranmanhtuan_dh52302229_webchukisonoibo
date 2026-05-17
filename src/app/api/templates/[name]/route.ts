@@ -195,7 +195,8 @@ export async function GET(
   const doc = generator();
   const buffer = await Packer.toBuffer(doc);
 
-  return new NextResponse(buffer, {
+  // Chuyển Buffer sang Uint8Array để tương thích với NextResponse (BodyInit)
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
